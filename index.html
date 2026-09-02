@@ -1,0 +1,3770 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Herramientas EDET - Suite v4</title>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<style>
+html, body {
+    margin: 0;
+    width: 100%;
+    height: 100%;
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+#map {
+    width: 100%;
+    height: 100%;
+}
+
+#panel {
+    position: absolute;
+    top: 15px;
+    left: 50px;
+    z-index: 1000;
+    width: 370px;
+    max-height: calc(100vh - 30px);
+    overflow-y: auto;
+    background: white;
+    padding: 12px;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,.30);
+}
+
+#panelArbol {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    z-index: 1000;
+    width: 410px;
+    max-height: calc(100vh - 30px);
+    overflow-y: auto;
+    background: white;
+    padding: 12px;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,.30);
+}
+
+#filaBusqueda {
+    display: flex;
+    gap: 5px;
+}
+
+#alimentador {
+    flex: 1;
+    padding: 9px;
+    border: 1px solid #aaa;
+    border-radius: 5px;
+    font-size: 15px;
+    text-transform: uppercase;
+}
+
+button {
+    padding: 9px 12px;
+    border: none;
+    border-radius: 5px;
+    background: #333;
+    color: white;
+    cursor: pointer;
+}
+
+button:hover {
+    background: #555;
+}
+
+#estado, #cabeceraInfo {
+    margin-top: 10px;
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+#cabeceraInfo {
+    padding: 8px;
+    background: #f4f4f4;
+    border-radius: 5px;
+}
+
+#panelArbol h3 {
+    margin: 0 0 10px 0;
+}
+
+.toolbarArbol {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 8px;
+}
+
+.toolbarArbol button {
+    flex: 1;
+    padding: 7px 8px;
+    font-size: 11px;
+}
+
+.filaSecc {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.toggleRama {
+    display: inline-block;
+    width: 16px;
+    text-align: center;
+    font-size: 11px;
+    cursor: pointer;
+    user-select: none;
+}
+
+.ramaHijos {
+    display: none;
+}
+
+.ramaHijos.abierta {
+    display: block;
+}
+
+.arbolNodo {
+    font-size: 12px;
+    padding: 3px 2px;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.arbolNodo:hover {
+    background: #eee;
+}
+
+.secc {
+    font-weight: bold;
+}
+
+.setNodo {
+    font-size: 12px;
+    padding: 3px 2px;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.setNodo:hover {
+    background: #eef;
+}
+
+.tipo {
+    font-weight: normal;
+    color: #666;
+    font-size: 11px;
+}
+
+.titulo-popup {
+    font-size: 15px;
+    font-weight: bold;
+    margin-bottom: 6px;
+}
+
+.botonCabecera {
+    width: 100%;
+    margin-top: 8px;
+}
+
+.etiqueta-secc {
+    background: rgba(255,255,255,.95);
+    border: 1px solid #333;
+    box-shadow: none;
+    font-size: 10px;
+    font-weight: bold;
+    padding: 2px 4px;
+    white-space: nowrap;
+}
+
+.etiqueta-set {
+    background: rgba(255,255,255,.95);
+    border: 1px solid #666;
+    box-shadow: none;
+    font-size: 10px;
+    font-weight: bold;
+    padding: 2px 4px;
+    white-space: nowrap;
+}
+
+
+/* Símbolo cartográfico de SET: cuadrado azul, distinto de los SECC rojos */
+.icono-set-leaflet {
+    background: transparent;
+    border: 0;
+}
+
+.simbolo-set {
+    width: 14px;
+    height: 14px;
+    box-sizing: border-box;
+    background: #1f5fff;
+    border: 2px solid #ffffff;
+    outline: 2px solid #123b9b;
+    box-shadow: 0 1px 3px rgba(0,0,0,.35);
+}
+
+.simbolo-set.busqueda {
+    width: 18px;
+    height: 18px;
+    border-width: 3px;
+}
+
+.etiqueta-cabecera {
+    background: black;
+    color: white;
+    border: 0;
+    font-size: 10px;
+    font-weight: bold;
+    padding: 3px 5px;
+}
+
+
+/* =========================================================
+   COMPARACIÓN DE DISTRIBUIDORES
+========================================================= */
+.listaDistribuidores {
+    margin-top: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.distribuidorComparado {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 8px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    background: #fafafa;
+    font-size: 12px;
+}
+
+.muestraColorDistribuidor {
+    width: 28px;
+    height: 5px;
+    border-radius: 3px;
+    flex: 0 0 auto;
+}
+
+.nombreDistribuidorComparado {
+    flex: 1;
+    font-weight: bold;
+}
+
+.btnQuitarDistribuidor {
+    background: #8b1e1e !important;
+    padding: 4px 7px !important;
+    font-size: 11px !important;
+}
+
+.ayudaComparacion {
+    margin-top: 9px;
+    font-size: 11px;
+    line-height: 1.4;
+    color: #666;
+}
+
+/* =========================================================
+   SUITE DE HERRAMIENTAS
+========================================================= */
+#barraHerramientas {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    z-index: 1200;
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+
+#barraHerramientas button {
+    background: #222;
+    font-size: 12px;
+    padding: 9px 11px;
+}
+
+#barraHerramientas button:hover {
+    background: #444;
+}
+
+.panelHerramienta {
+    position: absolute;
+    top: 58px;
+    right: 15px;
+    z-index: 1150;
+    width: 410px;
+    max-height: calc(100vh - 75px);
+    overflow-y: auto;
+    background: white;
+    padding: 12px;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,.30);
+    display: none;
+}
+
+.panelHerramienta.visible {
+    display: block;
+}
+
+.panelHerramienta .cabeceraPanel {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
+.panelHerramienta .cabeceraPanel h3 {
+    margin: 0;
+}
+
+.cerrarPanel {
+    background: #777 !important;
+    padding: 5px 9px !important;
+    font-size: 14px !important;
+    line-height: 1;
+}
+
+.busquedaHerramienta {
+    display: flex;
+    gap: 6px;
+}
+
+.busquedaHerramienta input {
+    flex: 1;
+    padding: 9px;
+    border: 1px solid #aaa;
+    border-radius: 5px;
+    font-size: 14px;
+}
+
+.resultadosBusqueda {
+    margin-top: 10px;
+    font-size: 12px;
+    line-height: 1.45;
+}
+
+.resultadoItem {
+    border-top: 1px solid #ddd;
+    padding: 8px 2px;
+    cursor: pointer;
+}
+
+.resultadoItem:hover {
+    background: #f2f2f2;
+}
+
+.accionesArbol {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 8px;
+}
+
+.accionesArbol button {
+    flex: 1;
+    padding: 7px 8px;
+    font-size: 11px;
+}
+
+/* El panel del árbol pasa a formar parte de la suite */
+#panelArbol {
+    top: 58px;
+    right: 15px;
+    display: none;
+}
+
+#panelArbol.visible {
+    display: block;
+}
+
+
+/* =========================================================
+   VISUALIZACIÓN MULTIDISPOSITIVO / RESPONSIVE
+   Escritorio: conserva la disposición original.
+   Tablet y teléfono: paneles adaptados, controles táctiles
+   y herramientas tipo bandeja inferior.
+========================================================= */
+* {
+    box-sizing: border-box;
+}
+
+html, body, #map {
+    min-height: 100%;
+    min-height: 100dvh;
+}
+
+input, button {
+    touch-action: manipulation;
+}
+
+/* Evita que textos largos desborden paneles */
+#estado,
+#cabeceraInfo,
+.resultadosBusqueda,
+.ayudaComparacion,
+.arbolNodo,
+.setNodo {
+    overflow-wrap: anywhere;
+}
+
+/* TABLET */
+@media (max-width: 1000px) {
+    #panel {
+        left: 12px;
+        top: 12px;
+        width: min(390px, calc(100vw - 24px));
+        max-height: 42vh;
+    }
+
+    #barraHerramientas {
+        top: 12px;
+        right: 12px;
+        max-width: calc(100vw - 430px);
+        flex-wrap: wrap;
+        justify-content: flex-end;
+    }
+
+    #barraHerramientas button {
+        padding: 8px 9px;
+        font-size: 11px;
+    }
+
+    .panelHerramienta,
+    #panelArbol {
+        right: 12px;
+        top: 92px;
+        width: min(410px, calc(100vw - 24px));
+        max-height: calc(100dvh - 104px);
+    }
+}
+
+/* TELÉFONO / PANTALLA ANGOSTA */
+@media (max-width: 700px) {
+    body {
+        overflow: hidden;
+    }
+
+    #map {
+        width: 100vw;
+        height: 100dvh;
+    }
+
+    #panel {
+        top: max(8px, env(safe-area-inset-top));
+        left: 8px;
+        right: 8px;
+        width: auto;
+        max-height: 31dvh;
+        padding: 9px;
+        border-radius: 8px;
+    }
+
+    #filaBusqueda,
+    .busquedaHerramienta {
+        gap: 5px;
+    }
+
+    #alimentador,
+    .busquedaHerramienta input {
+        min-width: 0;
+        padding: 10px 8px;
+        font-size: 16px; /* evita zoom automático en iPhone */
+    }
+
+    button {
+        min-height: 40px;
+        padding: 9px 10px;
+    }
+
+    #estado,
+    #cabeceraInfo {
+        font-size: 11px;
+        line-height: 1.35;
+    }
+
+    #estado {
+        max-height: 12dvh;
+        overflow-y: auto;
+    }
+
+    #cabeceraInfo {
+        padding: 6px;
+        margin-top: 6px;
+    }
+
+    /* Barra inferior deslizable: cómoda para uso con el pulgar */
+    #barraHerramientas {
+        position: fixed;
+        top: auto;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 1300;
+        max-width: none;
+        width: 100%;
+        display: flex;
+        flex-wrap: nowrap;
+        justify-content: flex-start;
+        gap: 6px;
+        padding: 7px max(8px, env(safe-area-inset-right))
+                 calc(7px + env(safe-area-inset-bottom))
+                 max(8px, env(safe-area-inset-left));
+        overflow-x: auto;
+        overscroll-behavior-x: contain;
+        -webkit-overflow-scrolling: touch;
+        background: rgba(255,255,255,.96);
+        box-shadow: 0 -2px 10px rgba(0,0,0,.18);
+        scrollbar-width: none;
+    }
+
+    #barraHerramientas::-webkit-scrollbar {
+        display: none;
+    }
+
+    #barraHerramientas button {
+        flex: 0 0 auto;
+        white-space: nowrap;
+        min-height: 42px;
+        padding: 9px 11px;
+        font-size: 11px;
+    }
+
+    /* Herramientas como bandejas inferiores */
+    .panelHerramienta,
+    #panelArbol {
+        position: fixed;
+        top: auto;
+        left: 8px;
+        right: 8px;
+        bottom: calc(62px + env(safe-area-inset-bottom));
+        width: auto;
+        max-height: 57dvh;
+        padding: 11px;
+        border-radius: 12px;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+    }
+
+    .panelHerramienta .cabeceraPanel,
+    #panelArbol .cabeceraPanel {
+        position: sticky;
+        top: -11px;
+        z-index: 2;
+        background: white;
+        padding: 10px 0 7px;
+        margin-top: -10px;
+    }
+
+    .cerrarPanel {
+        min-width: 42px;
+        min-height: 38px;
+    }
+
+    .accionesArbol,
+    .toolbarArbol {
+        position: sticky;
+        top: 36px;
+        z-index: 1;
+        background: white;
+        padding-bottom: 5px;
+    }
+
+    /* El árbol puede quebrar líneas en móvil en vez de salirse de pantalla */
+    .arbolNodo,
+    .setNodo {
+        white-space: normal;
+        line-height: 1.25;
+        font-size: 11px;
+    }
+
+    .ramaHijos {
+        margin-left: 8px !important;
+    }
+
+    .distribuidorComparado {
+        gap: 6px;
+        padding: 7px 6px;
+    }
+
+    .nombreDistribuidorComparado {
+        min-width: 0;
+        overflow-wrap: anywhere;
+    }
+
+    /* Popups legibles en pantallas pequeñas */
+    .leaflet-popup-content-wrapper {
+        max-width: calc(100vw - 36px);
+    }
+
+    .leaflet-popup-content {
+        margin: 11px 13px;
+        max-width: calc(100vw - 62px);
+        font-size: 12px;
+        line-height: 1.35;
+    }
+
+    .titulo-popup {
+        font-size: 14px;
+    }
+
+    /* Los zoom +/- no deben quedar debajo del panel de búsqueda */
+    .leaflet-top.leaflet-left {
+        top: auto;
+        bottom: calc(70px + env(safe-area-inset-bottom));
+        left: auto;
+        right: 8px;
+    }
+
+    .leaflet-control-zoom a {
+        width: 38px;
+        height: 38px;
+        line-height: 38px;
+        font-size: 22px;
+    }
+
+    .leaflet-bottom {
+        bottom: calc(58px + env(safe-area-inset-bottom));
+    }
+
+    .etiqueta-secc,
+    .etiqueta-set,
+    .etiqueta-cabecera {
+        font-size: 9px;
+    }
+}
+
+/* TELÉFONOS MUY ANGOSTOS */
+@media (max-width: 390px) {
+    #panel {
+        left: 5px;
+        right: 5px;
+        padding: 7px;
+    }
+
+    #filaBusqueda button,
+    .busquedaHerramienta button {
+        padding-left: 8px;
+        padding-right: 8px;
+    }
+
+    .panelHerramienta,
+    #panelArbol {
+        left: 5px;
+        right: 5px;
+        max-height: 60dvh;
+    }
+}
+
+/* MÓVIL HORIZONTAL: prioriza el mapa */
+@media (max-height: 520px) and (orientation: landscape) {
+    #panel {
+        width: min(360px, 46vw);
+        right: auto;
+        max-height: calc(100dvh - 16px);
+    }
+
+    #estado {
+        max-height: 22dvh;
+    }
+
+    .panelHerramienta,
+    #panelArbol {
+        left: auto;
+        right: 8px;
+        bottom: calc(55px + env(safe-area-inset-bottom));
+        width: min(390px, 48vw);
+        max-height: calc(100dvh - 70px);
+    }
+
+    #barraHerramientas {
+        padding-top: 5px;
+        padding-bottom: calc(5px + env(safe-area-inset-bottom));
+    }
+
+    #barraHerramientas button {
+        min-height: 38px;
+    }
+}
+
+</style>
+</head>
+
+<body>
+
+<div id="panel">
+    <div id="filaBusqueda">
+        <input id="alimentador" value="" placeholder="Distribuidor">
+        <button onclick="generarGrafo()">Buscar</button>
+    </div>
+
+    <div id="estado">Ingrese un distribuidor o utilice una herramienta de búsqueda.</div>
+
+    <div id="cabeceraInfo">
+        <b>Cabecera:</b> no seleccionada.
+    </div>
+</div>
+
+
+<div id="barraHerramientas">
+    <button onclick="abrirHerramienta('arbol')">Árbol de seccionamientos</button>
+    <button onclick="abrirHerramienta('set')">Buscar SET</button>
+    <button onclick="abrirHerramienta('secc')">Buscar SECC</button>
+    <button onclick="abrirHerramienta('comparar')">Comparar distribuidores</button>
+    <button onclick="limpiarMapa()">Limpiar mapa</button>
+</div>
+
+<div id="panelArbol">
+    <div class="cabeceraPanel">
+        <h3>Árbol de seccionamientos</h3>
+        <button class="cerrarPanel" onclick="cerrarHerramientas()">✕</button>
+    </div>
+
+    <div class="accionesArbol">
+        <button onclick="expandirTodo()">Expandir todo</button>
+        <button onclick="contraerTodo()">Contraer todo</button>
+    </div>
+
+    <div id="contenidoArbol">Seleccione la cabecera.</div>
+</div>
+
+<div id="panelBuscarSet" class="panelHerramienta">
+    <div class="cabeceraPanel">
+        <h3>Buscar SET</h3>
+        <button class="cerrarPanel" onclick="cerrarHerramientas()">✕</button>
+    </div>
+
+    <div class="busquedaHerramienta">
+        <input id="buscarSetInput" placeholder="Código de SET" autocomplete="off">
+        <button onclick="buscarSetGlobal()">Buscar</button>
+    </div>
+
+    <div id="resultadoSet" class="resultadosBusqueda">
+        Ingrese el código de una SET.
+    </div>
+</div>
+
+<div id="panelBuscarSecc" class="panelHerramienta">
+    <div class="cabeceraPanel">
+        <h3>Buscar Seccionamiento</h3>
+        <button class="cerrarPanel" onclick="cerrarHerramientas()">✕</button>
+    </div>
+
+    <div class="busquedaHerramienta">
+        <input id="buscarSeccInput" placeholder="Número de SECC" autocomplete="off">
+        <button onclick="buscarSeccGlobal()">Buscar</button>
+    </div>
+
+    <div id="resultadoSecc" class="resultadosBusqueda">
+        Ingrese el número de un seccionamiento.
+    </div>
+</div>
+
+<div id="panelComparar" class="panelHerramienta">
+    <div class="cabeceraPanel">
+        <h3>Comparar distribuidores</h3>
+        <button class="cerrarPanel" onclick="cerrarHerramientas()">✕</button>
+    </div>
+
+    <div class="busquedaHerramienta">
+        <input id="compararDistribuidorInput" placeholder="Ej. SHIPTON" autocomplete="off">
+        <button onclick="agregarDistribuidorComparado()">Agregar</button>
+    </div>
+
+    <div id="listaDistribuidoresComparados" class="listaDistribuidores"></div>
+
+    <div class="ayudaComparacion">
+        El distribuidor buscado en el panel principal sigue siendo el activo para el árbol, cabecera, SET, clientes y potencia. Los distribuidores agregados aquí se muestran como capas de referencia con colores diferentes.
+    </div>
+</div>
+
+<div id="map"></div>
+
+<script>
+const BASE_URL =
+    "https://ticse.edetsa.com/Agsedet/rest/services/" +
+    "OMS/OMS_MapaElectricoGeoRed_Dist/MapServer";
+
+const TOLERANCIA_NODOS_METROS = 2;
+const TOLERANCIA_DISPOSITIVO_METROS = 20;
+
+/* Los nodos topológicos siguen existiendo para los cálculos,
+   pero no se dibujan en el mapa operativo. Activar sólo para diagnóstico. */
+const MOSTRAR_NODOS_DIAGNOSTICO = false;
+
+const map = L.map("map", { maxZoom: 22 }).setView([-27.35, -65.59], 12);
+
+L.tileLayer(
+    "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+    {
+        maxNativeZoom: 19,
+        maxZoom: 22,
+        attribution: "&copy; OpenStreetMap"
+    }
+).addTo(map);
+
+const capaLineas = L.layerGroup().addTo(map);
+const capaNodos = L.layerGroup().addTo(map);
+const capaCabecera = L.layerGroup().addTo(map);
+const capaDispositivos = L.layerGroup().addTo(map);
+const capaEtiquetas = L.layerGroup().addTo(map);
+const capaSets = L.layerGroup().addTo(map);
+const capaEtiquetasSets = L.layerGroup().addTo(map);
+const capaBusqueda = L.layerGroup().addTo(map);
+
+let nodos = [];
+let aristas = [];
+let feederResults = [];
+let dispositivos = [];
+let seccionamientos = [];
+let transformadores = [];
+let sets = [];
+let cabecera = null;
+let cabeceraSecc = null;
+let alimentadorActual = "";
+let ramasAbiertas = new Set();
+let divisionCabeceraSecc = null;
+
+/* Distribuidores adicionales visibles sólo como referencia comparativa */
+let distribuidoresComparados = [];
+const COLORES_DISTRIBUIDORES = [
+    "#f28c28",
+    "#8e44ad",
+    "#16a085",
+    "#d35400",
+    "#2c3e50"
+];
+
+
+/* Visibilidad progresiva de etiquetas para evitar superposición */
+const ZOOM_ETIQUETAS_SECC = 18;
+const ZOOM_ETIQUETAS_SET = 19;
+
+map.on("zoomend", actualizarVisibilidadEtiquetas);
+
+document.getElementById("alimentador").addEventListener("keydown", function(event) {
+    if (event.key === "Enter") {
+        generarGrafo();
+    }
+});
+
+
+document.getElementById("buscarSetInput").addEventListener("keydown", function(event) {
+    if (event.key === "Enter") {
+        buscarSetGlobal();
+    }
+});
+
+document.getElementById("buscarSeccInput").addEventListener("keydown", function(event) {
+    if (event.key === "Enter") {
+        buscarSeccGlobal();
+    }
+});
+
+document.getElementById("compararDistribuidorInput").addEventListener("keydown", function(event) {
+    if (event.key === "Enter") {
+        agregarDistribuidorComparado();
+    }
+});
+
+
+function limpiarMapa() {
+    nodos = [];
+    aristas = [];
+    feederResults = [];
+    dispositivos = [];
+    seccionamientos = [];
+    transformadores = [];
+    sets = [];
+    cabecera = null;
+    cabeceraSecc = null;
+    alimentadorActual = "";
+    ramasAbiertas = new Set();
+    divisionCabeceraSecc = null;
+
+    distribuidoresComparados.forEach(function(d) {
+        if (d.capa && map.hasLayer(d.capa)) map.removeLayer(d.capa);
+    });
+    distribuidoresComparados = [];
+
+    capaLineas.clearLayers();
+    capaNodos.clearLayers();
+    capaCabecera.clearLayers();
+    capaDispositivos.clearLayers();
+    capaEtiquetas.clearLayers();
+    capaSets.clearLayers();
+    capaEtiquetasSets.clearLayers();
+    capaBusqueda.clearLayers();
+
+    document.getElementById("alimentador").value = "";
+    document.getElementById("estado").innerHTML = "Mapa limpio.";
+    document.getElementById("cabeceraInfo").innerHTML =
+        "<b>Cabecera:</b> no seleccionada.";
+    document.getElementById("contenidoArbol").innerHTML =
+        "Seleccione un distribuidor y luego la cabecera.";
+
+    document.getElementById("buscarSetInput").value = "";
+    document.getElementById("buscarSeccInput").value = "";
+    document.getElementById("resultadoSet").innerHTML =
+        "Ingrese el código de una SET.";
+    document.getElementById("resultadoSecc").innerHTML =
+        "Ingrese el número de un seccionamiento.";
+    document.getElementById("compararDistribuidorInput").value = "";
+    actualizarListaDistribuidoresComparados();
+
+    cerrarHerramientas();
+
+    map.closePopup();
+    map.setView([-27.35, -65.59], 12);
+}
+
+function cerrarHerramientas() {
+    document.getElementById("panelArbol").classList.remove("visible");
+    document.getElementById("panelBuscarSet").classList.remove("visible");
+    document.getElementById("panelBuscarSecc").classList.remove("visible");
+    document.getElementById("panelComparar").classList.remove("visible");
+}
+
+function abrirHerramienta(tipo) {
+    cerrarHerramientas();
+
+    if (tipo === "arbol") {
+        document.getElementById("panelArbol").classList.add("visible");
+        return;
+    }
+
+    if (tipo === "set") {
+        document.getElementById("panelBuscarSet").classList.add("visible");
+        setTimeout(function() {
+            document.getElementById("buscarSetInput").focus();
+        }, 50);
+        return;
+    }
+
+    if (tipo === "secc") {
+        document.getElementById("panelBuscarSecc").classList.add("visible");
+        setTimeout(function() {
+            document.getElementById("buscarSeccInput").focus();
+        }, 50);
+        return;
+    }
+
+    if (tipo === "comparar") {
+        document.getElementById("panelComparar").classList.add("visible");
+        actualizarListaDistribuidoresComparados();
+        setTimeout(function() {
+            document.getElementById("compararDistribuidorInput").focus();
+        }, 50);
+    }
+}
+
+
+async function agregarDistribuidorComparado() {
+    const input = document.getElementById("compararDistribuidorInput");
+    const nombre = input.value.trim().toUpperCase();
+
+    if (!nombre) return;
+
+    if (nombre === alimentadorActual) {
+        alert(nombre + " ya es el distribuidor activo.");
+        return;
+    }
+
+    if (distribuidoresComparados.some(function(d) { return d.nombre === nombre; })) {
+        alert(nombre + " ya está agregado al mapa.");
+        return;
+    }
+
+    if (distribuidoresComparados.length >= 5) {
+        alert("Esta versión de prueba admite hasta 5 distribuidores adicionales.");
+        return;
+    }
+
+    const color = COLORES_DISTRIBUIDORES[distribuidoresComparados.length % COLORES_DISTRIBUIDORES.length];
+    const capa = L.layerGroup().addTo(map);
+
+    input.disabled = true;
+
+    try {
+        const url =
+            BASE_URL +
+            "/find" +
+            "?f=json" +
+            "&contains=false" +
+            "&returnGeometry=true" +
+            "&searchText=" + encodeURIComponent(nombre) +
+            "&layers=25,26" +
+            "&searchFields=FEEDERNAME" +
+            "&sr=4326";
+
+        const response = await fetch(url);
+        const json = await response.json();
+
+        if (!json.results || json.results.length === 0) {
+            map.removeLayer(capa);
+            alert("No se encontró el distribuidor " + nombre + ".");
+            return;
+        }
+
+        const bounds = [];
+
+        json.results.forEach(function(resultado) {
+            const geometria = resultado.geometry;
+            if (!geometria || !geometria.paths) return;
+
+            geometria.paths.forEach(function(path) {
+                const latlngs = path.map(function(p) {
+                    const latlng = [p[1], p[0]];
+                    bounds.push(latlng);
+                    return latlng;
+                });
+
+                L.polyline(latlngs, {
+                    color: color,
+                    weight: 5,
+                    opacity: .85
+                })
+                .bindPopup(
+                    "<b>Distribuidor:</b> " + escaparHTML(nombre) +
+                    "<br><span style='color:" + color + ";font-weight:bold'>Traza de comparación</span>"
+                )
+                .addTo(capa);
+            });
+        });
+
+        distribuidoresComparados.push({
+            nombre: nombre,
+            color: color,
+            capa: capa,
+            visible: true,
+            resultados: json.results
+        });
+
+        input.value = "";
+        actualizarListaDistribuidoresComparados();
+
+        if (bounds.length) {
+            const capasVisibles = [capaLineas].concat(
+                distribuidoresComparados
+                    .filter(function(d) { return d.visible; })
+                    .map(function(d) { return d.capa; })
+            );
+            const grupo = L.featureGroup();
+            capasVisibles.forEach(function(c) {
+                c.getLayers().forEach(function(l) { grupo.addLayer(l); });
+            });
+            if (grupo.getLayers().length) map.fitBounds(grupo.getBounds(), { padding: [30, 30] });
+        }
+
+    } catch (error) {
+        console.error(error);
+        if (map.hasLayer(capa)) map.removeLayer(capa);
+        alert("Error cargando " + nombre + ": " + error.message);
+    } finally {
+        input.disabled = false;
+        input.focus();
+    }
+}
+
+function actualizarListaDistribuidoresComparados() {
+    const contenedor = document.getElementById("listaDistribuidoresComparados");
+    if (!contenedor) return;
+
+    let html = "";
+
+    if (alimentadorActual) {
+        html +=
+            '<div class="distribuidorComparado">' +
+            '<input type="checkbox" checked disabled title="Distribuidor activo">' +
+            '<span class="muestraColorDistribuidor" style="background:#3388ff"></span>' +
+            '<span class="nombreDistribuidorComparado">' + escaparHTML(alimentadorActual) + ' <small>(activo)</small></span>' +
+            '</div>';
+    }
+
+    distribuidoresComparados.forEach(function(d, indice) {
+        html +=
+            '<div class="distribuidorComparado">' +
+            '<input type="checkbox" ' + (d.visible ? 'checked' : '') +
+            ' onchange="alternarDistribuidorComparado(' + indice + ', this.checked)">' +
+            '<span class="muestraColorDistribuidor" style="background:' + d.color + '"></span>' +
+            '<span class="nombreDistribuidorComparado">' + escaparHTML(d.nombre) + '</span>' +
+            '<button class="btnQuitarDistribuidor" onclick="quitarDistribuidorComparado(' + indice + ')">Quitar</button>' +
+            '</div>';
+    });
+
+    if (!html) {
+        html = '<div style="font-size:12px;color:#777">Todavía no hay distribuidores cargados.</div>';
+    }
+
+    contenedor.innerHTML = html;
+}
+
+function alternarDistribuidorComparado(indice, visible) {
+    const d = distribuidoresComparados[indice];
+    if (!d) return;
+
+    d.visible = visible;
+
+    if (visible) {
+        if (!map.hasLayer(d.capa)) d.capa.addTo(map);
+    } else {
+        if (map.hasLayer(d.capa)) map.removeLayer(d.capa);
+    }
+}
+
+function quitarDistribuidorComparado(indice) {
+    const d = distribuidoresComparados[indice];
+    if (!d) return;
+
+    if (map.hasLayer(d.capa)) map.removeLayer(d.capa);
+    distribuidoresComparados.splice(indice, 1);
+    actualizarListaDistribuidoresComparados();
+}
+
+function escaparSQL(valor) {
+    return String(valor).replaceAll("'", "''");
+}
+
+function escaparHTML(valor) {
+    return String(valor ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+}
+
+async function buscarSetGlobal() {
+    const valor = document.getElementById("buscarSetInput").value.trim();
+    const salida = document.getElementById("resultadoSet");
+
+    if (!valor) {
+        salida.innerHTML = "Ingrese el código de una SET.";
+        return;
+    }
+
+    salida.innerHTML = "Buscando...";
+    capaBusqueda.clearLayers();
+
+    try {
+        const limpio = escaparSQL(valor);
+
+        const where =
+            "(NAME = '" + limpio + "' OR CODIGO = '" + limpio + "')";
+
+        const url =
+            BASE_URL +
+            "/1/query" +
+            "?f=json" +
+            "&where=" + encodeURIComponent(where) +
+            "&outFields=*" +
+            "&returnGeometry=true" +
+            "&outSR=4326" +
+            "&resultRecordCount=100";
+
+        const response = await fetch(url);
+        const json = await response.json();
+
+        if (json.error) {
+            throw new Error(json.error.message || "Error REST");
+        }
+
+        const features = (json.features || []).filter(function(f) {
+            return f.geometry &&
+                   Number.isFinite(f.geometry.y) &&
+                   Number.isFinite(f.geometry.x);
+        });
+
+        if (!features.length) {
+            salida.innerHTML = "No se encontró la SET <b>" + escaparHTML(valor) + "</b>.";
+            return;
+        }
+
+        let html = "<b>Resultados:</b> " + features.length;
+
+        features.forEach(function(feature, indice) {
+            const a = feature.attributes || {};
+            const codigo = a.NAME ?? a.CODIGO ?? a.OBJECTID;
+            const lat = feature.geometry.y;
+            const lng = feature.geometry.x;
+
+            const marker = L.marker([lat, lng], {
+                icon: L.divIcon({
+                    className: "icono-set-leaflet",
+                    html: '<div class="simbolo-set busqueda"></div>',
+                    iconSize: [18, 18],
+                    iconAnchor: [9, 9]
+                })
+            })
+            .bindPopup(
+                '<div class="titulo-popup">SET ' + escaparHTML(codigo) + "</div>" +
+                "<b>Potencia instalada:</b> " + formatearKVA(a.POTENCIA_INSTALADA) + "<br>" +
+                "<b>Ubicación:</b> " + escaparHTML(a.UBICACION ?? "-") + "<br>" +
+                "<b>Tensión:</b> " + escaparHTML(a.TENSION ?? "-")
+            )
+            .addTo(capaBusqueda);
+
+            html +=
+                '<div class="resultadoItem" onclick="enfocarBusqueda(' +
+                lat + "," + lng + "," + indice + ", 'set')\">" +
+                "<b>SET " + escaparHTML(codigo) + "</b><br>" +
+                escaparHTML(a.UBICACION ?? "-") + "<br>" +
+                formatearKVA(a.POTENCIA_INSTALADA) +
+                "</div>";
+
+            marker.__indiceBusqueda = indice;
+        });
+
+        salida.innerHTML = html;
+
+        if (features.length === 1) {
+            const f = features[0];
+            map.setView([f.geometry.y, f.geometry.x], 20);
+            const layer = capaBusqueda.getLayers()[0];
+            if (layer) layer.openPopup();
+        }
+
+    } catch (error) {
+        console.error(error);
+        salida.innerHTML = "<b>Error:</b> " + escaparHTML(error.message);
+    }
+}
+
+async function buscarSeccGlobal() {
+    const valor = document.getElementById("buscarSeccInput").value.trim();
+    const salida = document.getElementById("resultadoSecc");
+
+    if (!valor) {
+        salida.innerHTML = "Ingrese el número de un seccionamiento.";
+        return;
+    }
+
+    salida.innerHTML = "Buscando...";
+    capaBusqueda.clearLayers();
+
+    try {
+        const limpio = escaparSQL(valor);
+
+        const where =
+            "SECCID = '" + limpio + "'";
+
+        const url =
+            BASE_URL +
+            "/10/query" +
+            "?f=json" +
+            "&where=" + encodeURIComponent(where) +
+            "&outFields=*" +
+            "&returnGeometry=true" +
+            "&outSR=4326" +
+            "&resultRecordCount=100";
+
+        const response = await fetch(url);
+        const json = await response.json();
+
+        if (json.error) {
+            throw new Error(json.error.message || "Error REST");
+        }
+
+        const resultados = (json.features || []).filter(function(feature) {
+            const g = feature.geometry;
+            const a = feature.attributes || {};
+            const subtipo = Number(a.SUBTYPECD);
+            const seccid = String(a.SECCID ?? "").trim();
+
+            return (
+                g &&
+                Number.isFinite(g.y) &&
+                Number.isFinite(g.x) &&
+                [1, 2, 3].includes(subtipo) &&
+                seccid &&
+                seccid !== "0"
+            );
+        });
+
+        if (!resultados.length) {
+            salida.innerHTML =
+                "No se encontró el SECC <b>" +
+                escaparHTML(valor) +
+                "</b>.";
+            return;
+        }
+
+        let html = "<b>Resultados:</b> " + resultados.length;
+
+        resultados.forEach(function(feature, indice) {
+            const a = feature.attributes || {};
+            const g = feature.geometry;
+            const seccid = a.SECCID;
+            const subtipo = nombreSubtype(a.SUBTYPECD);
+
+            const marker = L.circleMarker([g.y, g.x], {
+                radius: 10,
+                weight: 3,
+                color: "#d00000",
+                fillColor: "#d00000",
+                fillOpacity: .95
+            })
+            .bindPopup(
+                '<div class="titulo-popup">SECC ' +
+                escaparHTML(seccid) +
+                "</div>" +
+                "<b>Tipo:</b> " +
+                escaparHTML(subtipo) +
+                "<br>" +
+                "<b>Nombre:</b> " +
+                escaparHTML(a.NAME ?? "-") +
+                "<br>" +
+                "<b>Comentarios:</b> " +
+                escaparHTML(a.COMMENTS ?? "-") +
+                "<br>" +
+                "<b>Tensión nominal:</b> " +
+                escaparHTML(a.NOMINALVOLTAGE ?? "-")
+            )
+            .addTo(capaBusqueda);
+
+            const perteneceDistribuidor =
+                seccionamientos.some(function(s) {
+                    return String(s.seccid) === String(seccid);
+                });
+
+            html +=
+                '<div class="resultadoItem">' +
+                '<div onclick="enfocarBusqueda(' +
+                g.y + "," +
+                g.x + "," +
+                indice +
+                ', \'secc\')">' +
+                "<b>SECC " +
+                escaparHTML(seccid) +
+                "</b> [" +
+                escaparHTML(subtipo) +
+                "]<br>" +
+                escaparHTML(a.NAME ?? "-") +
+                "</div>" +
+                (
+                    perteneceDistribuidor
+                    ? (
+                        '<button style="margin-top:6px;width:100%;" ' +
+                        'onclick="definirCabeceraSecc(\'' +
+                        escaparHTML(seccid) +
+                        '\')">Definir como cabecera</button>'
+                    )
+                    : ""
+                ) +
+                "</div>";
+
+            marker.__indiceBusqueda = indice;
+        });
+
+        salida.innerHTML = html;
+
+        if (resultados.length === 1) {
+            const f = resultados[0];
+            map.setView([f.geometry.y, f.geometry.x], 20);
+            const layer = capaBusqueda.getLayers()[0];
+            if (layer) layer.openPopup();
+        }
+
+    } catch (error) {
+        console.error(error);
+        salida.innerHTML = "<b>Error:</b> " + escaparHTML(error.message);
+    }
+}
+
+function enfocarBusqueda(lat, lng, indice, tipo) {
+    map.setView([lat, lng], 20);
+
+    const layers = capaBusqueda.getLayers();
+    const layer = layers[indice];
+
+    if (layer && layer.openPopup) {
+        layer.openPopup();
+    }
+}
+
+
+async function generarGrafo() {
+    const alimentador =
+        document.getElementById("alimentador").value.trim().toUpperCase();
+
+    if (!alimentador) return;
+
+    alimentadorActual = alimentador;
+
+    const duplicadoComparado = distribuidoresComparados.findIndex(function(d) { return d.nombre === alimentador; });
+    if (duplicadoComparado >= 0) quitarDistribuidorComparado(duplicadoComparado);
+
+    nodos = [];
+    aristas = [];
+    feederResults = [];
+    dispositivos = [];
+    seccionamientos = [];
+    transformadores = [];
+    sets = [];
+    cabecera = null;
+    cabeceraSecc = null;
+    ramasAbiertas = new Set();
+    divisionCabeceraSecc = null;
+
+    capaLineas.clearLayers();
+    capaNodos.clearLayers();
+    capaCabecera.clearLayers();
+    capaDispositivos.clearLayers();
+    capaEtiquetas.clearLayers();
+    capaSets.clearLayers();
+    capaEtiquetasSets.clearLayers();
+    capaBusqueda.clearLayers();
+
+    document.getElementById("contenidoArbol").innerHTML =
+        "Seleccione la cabecera.";
+
+    document.getElementById("cabeceraInfo").innerHTML =
+        "<b>Cabecera:</b> no seleccionada.";
+
+    actualizarListaDistribuidoresComparados();
+    mostrarEstado("Buscando " + alimentador + "...");
+
+    try {
+        const url =
+            BASE_URL +
+            "/find" +
+            "?f=json" +
+            "&contains=false" +
+            "&returnGeometry=true" +
+            "&searchText=" + encodeURIComponent(alimentador) +
+            "&layers=25,26" +
+            "&searchFields=FEEDERNAME" +
+            "&sr=4326";
+
+        const response = await fetch(url);
+        const json = await response.json();
+
+        if (!json.results || json.results.length === 0) {
+            mostrarEstado("Distribuidor no encontrado.");
+            return;
+        }
+
+        feederResults = json.results;
+
+        construirGrafo();
+        calcularGrados();
+        dibujarNodos();
+
+        mostrarEstado("Buscando seccionamientos...");
+        await cargarDispositivos();
+        dibujarSeccionamientos();
+
+        mostrarEstado("Buscando SET...");
+        await cargarSetsMapa();
+
+        mostrarEstado("Contando clientes vigentes por SET...");
+        await cargarClientesSets();
+
+        dibujarSets();
+
+        ajustarMapa();
+
+        mostrarEstado(
+            "<b>" + alimentadorActual + "</b><br><br>" +
+            "Nodos: " + nodos.length + "<br>" +
+            "Aristas: " + aristas.length + "<br>" +
+            "Seccionamientos válidos: " + seccionamientos.length + "<br>" +
+            "Transformadores: " + transformadores.length + "<br>" +
+            "SET encontradas: " + sets.length + "<br>" +
+            "Potencia instalada total: <b>" + formatearKVA(
+                sets.reduce(function(t, s) { return t + s.potenciaInstalada; }, 0)
+            ) + "</b><br>" +
+            "Clientes vigentes en SET: <b>" +
+            formatearClientes(
+                sets.reduce(function(t, s) { return t + numeroSeguro(s.clientes); }, 0)
+            ) + "</b><br><br>" +
+            "Las SET ya están dibujadas. Ahora seleccione la cabecera."
+        );
+
+    } catch (error) {
+        console.error(error);
+        mostrarEstado("<b>ERROR:</b><br>" + error.message);
+    }
+}
+
+function construirGrafo() {
+    feederResults.forEach(function(resultado) {
+        const geometria = resultado.geometry;
+
+        if (!geometria || !geometria.paths) return;
+
+        geometria.paths.forEach(function(path) {
+            L.polyline(
+                path.map(function(p) {
+                    return [p[1], p[0]];
+                }),
+                {
+                    weight: 3,
+                    opacity: .75
+                }
+            ).addTo(capaLineas);
+
+            for (let i = 0; i < path.length - 1; i++) {
+                const p1 = path[i];
+                const p2 = path[i + 1];
+
+                const nodoA = obtenerOCrearNodo(p1[1], p1[0]);
+                const nodoB = obtenerOCrearNodo(p2[1], p2[0]);
+
+                if (nodoA.id === nodoB.id) continue;
+
+                crearArista(nodoA, nodoB);
+            }
+        });
+    });
+}
+
+function obtenerOCrearNodo(lat, lng) {
+    for (const nodo of nodos) {
+        if (
+            distanciaMetros(lat, lng, nodo.lat, nodo.lng) <=
+            TOLERANCIA_NODOS_METROS
+        ) {
+            return nodo;
+        }
+    }
+
+    const nodo = {
+        id:
+            "NODO_" +
+            String(nodos.length + 1).padStart(4, "0"),
+        lat: lat,
+        lng: lng,
+        vecinos: new Set(),
+        grado: 0,
+        padre: null,
+        hijos: [],
+        nivel: null,
+        distanciaCabecera: null
+    };
+
+    nodos.push(nodo);
+    return nodo;
+}
+
+function crearArista(nodoA, nodoB) {
+    const existe = aristas.some(function(a) {
+        return (
+            (a.nodoA === nodoA.id && a.nodoB === nodoB.id) ||
+            (a.nodoA === nodoB.id && a.nodoB === nodoA.id)
+        );
+    });
+
+    if (existe) return;
+
+    const arista = {
+        id:
+            "ARISTA_" +
+            String(aristas.length + 1).padStart(5, "0"),
+        nodoA: nodoA.id,
+        nodoB: nodoB.id,
+        longitud:
+            distanciaMetros(
+                nodoA.lat,
+                nodoA.lng,
+                nodoB.lat,
+                nodoB.lng
+            ),
+        fromNode: null,
+        toNode: null
+    };
+
+    aristas.push(arista);
+
+    nodoA.vecinos.add(nodoB.id);
+    nodoB.vecinos.add(nodoA.id);
+}
+
+function calcularGrados() {
+    nodos.forEach(function(nodo) {
+        nodo.grado = nodo.vecinos.size;
+    });
+}
+
+function dibujarNodos() {
+    capaNodos.clearLayers();
+
+    // Los nodos son necesarios para reconstruir y orientar la topología,
+    // pero no aportan información operativa en la vista normal.
+    if (!MOSTRAR_NODOS_DIAGNOSTICO) return;
+
+    nodos.forEach(function(nodo) {
+        let radio = 3;
+
+        if (nodo.grado === 1) radio = 7;
+        if (nodo.grado >= 3) radio = 8;
+
+        let html =
+            '<div class="titulo-popup">' +
+            nodo.id +
+            "</div>" +
+            "Grado: " +
+            nodo.grado;
+
+        if (nodo.grado === 1) {
+            html +=
+                '<button class="botonCabecera" onclick="definirCabecera(\'' +
+                nodo.id +
+                "')\">Definir como cabecera</button>";
+        }
+
+        L.circleMarker(
+            [nodo.lat, nodo.lng],
+            {
+                radius: radio,
+                weight: 2,
+                fillOpacity: .85
+            }
+        )
+        .bindPopup(html)
+        .addTo(capaNodos);
+    });
+}
+
+function obtenerGuidsDistribuidor() {
+    const guids = new Set();
+
+    feederResults.forEach(function(resultado) {
+        const attr = resultado.attributes || {};
+        const guid = attr.ParentCircuitSourceGUID;
+
+        if (guid) {
+            guids.add(guid);
+        }
+    });
+
+    return [...guids];
+}
+
+async function cargarDispositivos() {
+    const guids = obtenerGuidsDistribuidor();
+
+    if (guids.length === 0) {
+        throw new Error("No se encontró ParentCircuitSourceGUID.");
+    }
+
+    const capas = [
+        { id: 2, tipo: "DynamicPDevice" },
+        { id: 3, tipo: "Fuse" },
+        { id: 8, tipo: "Switch" }
+    ];
+
+    const equipos = [];
+
+    for (const capa of capas) {
+        const where = guids
+            .map(function(guid) {
+                return (
+                    "ParentCircuitSourceGUID = '" +
+                    String(guid).replaceAll("'", "''") +
+                    "'"
+                );
+            })
+            .join(" OR ");
+
+        const url =
+            BASE_URL +
+            "/" + capa.id +
+            "/query" +
+            "?f=json" +
+            "&where=" + encodeURIComponent(where) +
+            "&outFields=*" +
+            "&returnGeometry=true" +
+            "&outSR=4326" +
+            "&resultRecordCount=10000";
+
+        const response = await fetch(url);
+        const json = await response.json();
+
+        if (json.error) {
+            console.error("Error capa " + capa.id, json.error);
+            continue;
+        }
+
+        (json.features || []).forEach(function(feature) {
+            const attr = feature.attributes || {};
+
+            if (
+                attr.SECCIONAMIENTOOBJECTID === null ||
+                attr.SECCIONAMIENTOOBJECTID === undefined ||
+                !feature.geometry
+            ) {
+                return;
+            }
+
+            equipos.push({
+                tipo: capa.tipo,
+                objectid: attr.OBJECTID,
+                seccionamientoObjectId: attr.SECCIONAMIENTOOBJECTID,
+                lat: feature.geometry.y,
+                lng: feature.geometry.x,
+                atributos: attr
+            });
+        });
+    }
+
+    dispositivos = equipos;
+
+    await resolverSeccionamientos();
+    proyectarSeccionamientos();
+}
+
+async function resolverSeccionamientos() {
+    const ids = [
+        ...new Set(
+            dispositivos.map(function(d) {
+                return Number(d.seccionamientoObjectId);
+            })
+        )
+    ].filter(Number.isFinite);
+
+    if (ids.length === 0) return;
+
+    const mapa = new Map();
+    const LOTE = 100;
+
+    for (let i = 0; i < ids.length; i += LOTE) {
+        const lote = ids.slice(i, i + LOTE);
+
+        const where =
+            "OBJECTID IN (" +
+            lote.join(",") +
+            ")";
+
+        const url =
+            BASE_URL +
+            "/10/query" +
+            "?f=json" +
+            "&where=" + encodeURIComponent(where) +
+            "&outFields=*" +
+            "&returnGeometry=true" +
+            "&outSR=4326" +
+            "&resultRecordCount=1000";
+
+        const response = await fetch(url);
+        const json = await response.json();
+
+        if (json.error) {
+            console.error("Error capa 10:", json.error);
+            continue;
+        }
+
+        (json.features || []).forEach(function(feature) {
+            mapa.set(
+                String(feature.attributes.OBJECTID),
+                feature
+            );
+        });
+    }
+
+    const candidatos = [];
+
+    dispositivos.forEach(function(equipo) {
+        const feature =
+            mapa.get(
+                String(equipo.seccionamientoObjectId)
+            );
+
+        if (!feature) return;
+
+        const attr = feature.attributes || {};
+        const subtype = Number(attr.SUBTYPECD);
+
+        if (![1, 2, 3].includes(subtype)) return;
+
+        const seccid =
+            String(attr.SECCID ?? "").trim();
+
+        if (!seccid || seccid === "0") return;
+
+        candidatos.push({
+            seccid: seccid,
+            subtype: subtype,
+            tipoSeccionamiento: nombreSubtype(subtype),
+            nombre: attr.NAME,
+            comentarios: attr.COMMENTS,
+            lat: equipo.lat,
+            lng: equipo.lng,
+            tiposEquipo: [equipo.tipo],
+            equipos: [equipo],
+            padreSecc: null,
+            hijosSecc: []
+        });
+    });
+
+    const agrupados = new Map();
+
+    candidatos.forEach(function(candidato) {
+        const key = candidato.seccid;
+
+        if (!agrupados.has(key)) {
+            agrupados.set(key, candidato);
+            return;
+        }
+
+        const existente = agrupados.get(key);
+
+        candidato.tiposEquipo.forEach(function(tipo) {
+            if (!existente.tiposEquipo.includes(tipo)) {
+                existente.tiposEquipo.push(tipo);
+            }
+        });
+
+        existente.equipos.push(...candidato.equipos);
+    });
+
+    seccionamientos = [...agrupados.values()];
+}
+
+function nombreSubtype(subtype) {
+    switch (Number(subtype)) {
+        case 1:
+            return "Línea";
+        case 2:
+            return "Estación";
+        case 3:
+            return "Anillo";
+        default:
+            return "Otro";
+    }
+}
+
+function proyectarSeccionamientos() {
+    seccionamientos.forEach(function(secc) {
+        let mejor = null;
+
+        aristas.forEach(function(arista) {
+            const nodoA = buscarNodo(arista.nodoA);
+            const nodoB = buscarNodo(arista.nodoB);
+
+            const resultado =
+                proyectarPuntoSegmento(
+                    secc.lat,
+                    secc.lng,
+                    nodoA.lat,
+                    nodoA.lng,
+                    nodoB.lat,
+                    nodoB.lng
+                );
+
+            if (
+                !mejor ||
+                resultado.distancia < mejor.distancia
+            ) {
+                mejor = {
+                    aristaId: arista.id,
+                    distancia: resultado.distancia,
+                    t: resultado.t
+                };
+            }
+        });
+
+        if (!mejor) {
+            secc.snapValido = false;
+            return;
+        }
+
+        secc.aristaId = mejor.aristaId;
+        secc.distanciaLinea = mejor.distancia;
+        secc.tArista = mejor.t;
+        secc.snapValido =
+            mejor.distancia <=
+            TOLERANCIA_DISPOSITIVO_METROS;
+    });
+}
+
+function dibujarSeccionamientos() {
+    capaDispositivos.clearLayers();
+    capaEtiquetas.clearLayers();
+
+    seccionamientos.forEach(function(secc) {
+        L.circleMarker(
+            [secc.lat, secc.lng],
+            {
+                radius: 7,
+                weight: 2,
+                color: "#d00000",
+                fillColor: "#d00000",
+                fillOpacity: .95
+            }
+        )
+        .bindPopup(
+            '<div class="titulo-popup">SECC ' +
+            secc.seccid +
+            "</div>" +
+            "<b>Tipo:</b> " +
+            secc.tipoSeccionamiento +
+            "<br>" +
+            "<b>Equipo:</b> " +
+            secc.tiposEquipo.join(" / ") +
+            "<br>" +
+            "<b>Nombre:</b> " +
+            (secc.nombre ?? "-") +
+            "<br>" +
+            "<b>Comentarios:</b> " +
+            (secc.comentarios ?? "-") +
+            (
+                cabecera
+                ? (
+                    "<br><br>" +
+                    "<b>SET aguas abajo:</b> " +
+                    secc.cantidadSetsAguasAbajo +
+                    "<br>" +
+                    "<b>Clientes vigentes aguas abajo:</b> " +
+                    formatearClientes(secc.clientesAguasAbajo) +
+                    "<br>" +
+                    "<b>Potencia instalada aguas abajo:</b> " +
+                    formatearKVA(secc.potenciaAguasAbajo)
+                )
+                : ""
+            ) +
+            (
+                '<button class="botonCabecera" onclick="definirCabeceraSecc(\'' +
+                secc.seccid +
+                '\')">Definir como cabecera</button>'
+            )
+        )
+        .addTo(capaDispositivos);
+
+        L.marker(
+            [secc.lat, secc.lng],
+            {
+                interactive: false,
+                icon:
+                    L.divIcon({
+                        className: "etiqueta-secc",
+                        html: "SECC " + secc.seccid,
+                        iconSize: null
+                    })
+            }
+        )
+        .addTo(capaEtiquetas);
+    });
+
+    actualizarVisibilidadEtiquetas();
+}
+
+/* =========================================================
+   NUEVO: CARGAR SET SOLO PARA MOSTRAR EN MAPA
+========================================================= */
+
+async function cargarSetsMapa() {
+    const guids = obtenerGuidsDistribuidor();
+
+    transformadores = [];
+    sets = [];
+
+    if (guids.length === 0) {
+        return;
+    }
+
+    for (const guid of guids) {
+        const where =
+            "ParentCircuitSourceGUID = '" +
+            String(guid).replaceAll("'", "''") +
+            "'";
+
+        const url =
+            BASE_URL +
+            "/6/query" +
+            "?f=json" +
+            "&where=" + encodeURIComponent(where) +
+            "&outFields=*" +
+            "&returnGeometry=true" +
+            "&outSR=4326" +
+            "&resultRecordCount=10000";
+
+        const response = await fetch(url);
+        const json = await response.json();
+
+        if (json.error) {
+            console.error("Error capa 6:", json.error);
+            continue;
+        }
+
+        (json.features || []).forEach(function(feature) {
+            const attr = feature.attributes || {};
+
+            if (
+                !feature.geometry ||
+                attr.ELECTRICSTATIONOBJECTID === null ||
+                attr.ELECTRICSTATIONOBJECTID === undefined
+            ) {
+                return;
+            }
+
+            transformadores.push({
+                objectid: attr.OBJECTID,
+                equipmentNumber: attr.EQUIPMENTNUMBER,
+                electricStationObjectId:
+                    Number(attr.ELECTRICSTATIONOBJECTID),
+                ratedKva: numeroSeguro(attr.RATEDKVA),
+                lat: feature.geometry.y,
+                lng: feature.geometry.x
+            });
+        });
+    }
+
+    const ids = [
+        ...new Set(
+            transformadores.map(function(t) {
+                return t.electricStationObjectId;
+            })
+        )
+    ].filter(Number.isFinite);
+
+    if (ids.length === 0) {
+        return;
+    }
+
+    const estacionesMapa = new Map();
+    const LOTE = 100;
+
+    for (let i = 0; i < ids.length; i += LOTE) {
+        const lote = ids.slice(i, i + LOTE);
+
+        const where =
+            "OBJECTID IN (" +
+            lote.join(",") +
+            ")";
+
+        const url =
+            BASE_URL +
+            "/1/query" +
+            "?f=json" +
+            "&where=" + encodeURIComponent(where) +
+            "&outFields=*" +
+            "&returnGeometry=true" +
+            "&outSR=4326" +
+            "&resultRecordCount=1000";
+
+        const response = await fetch(url);
+        const json = await response.json();
+
+        if (json.error) {
+            console.error("Error capa 1:", json.error);
+            continue;
+        }
+
+        (json.features || []).forEach(function(feature) {
+            estacionesMapa.set(
+                String(feature.attributes.OBJECTID),
+                feature
+            );
+        });
+    }
+
+    const mapaSets = new Map();
+
+    transformadores.forEach(function(trafo) {
+        const station =
+            estacionesMapa.get(
+                String(trafo.electricStationObjectId)
+            );
+
+        if (!station) return;
+
+        const attr = station.attributes || {};
+        const key = String(attr.OBJECTID);
+
+        if (!mapaSets.has(key)) {
+            mapaSets.set(key, {
+                objectid: attr.OBJECTID,
+                codigo:
+                    attr.NAME ??
+                    attr.CODIGO ??
+                    attr.OBJECTID,
+                potenciaInstalada:
+                    numeroSeguro(attr.POTENCIA_INSTALADA),
+                clientes: 0,
+                clientesCargados: false,
+                ubicacion:
+                    attr.UBICACION,
+                tension:
+                    attr.TENSION,
+                stationType:
+                    attr.STATIONTYPE,
+                transformadores: []
+            });
+        }
+
+        mapaSets.get(key).transformadores.push(trafo);
+    });
+
+    sets = [...mapaSets.values()];
+
+    /* Para esta versión usamos la posición del trafo.
+       Como SHIPTON dio 1 trafo por SET, es directo. */
+    sets.forEach(function(set) {
+        const trafo = set.transformadores[0];
+
+        if (!trafo) return;
+
+        set.lat = trafo.lat;
+        set.lng = trafo.lng;
+
+        set.snapValido = false;
+        set.aristaId = null;
+        set.tArista = null;
+        set.tOrientado = null;
+        set.fromNode = null;
+        set.toNode = null;
+        set.distanciaCabecera = null;
+        set.distanciaLinea = null;
+        set.padreSecc = null;
+    });
+
+    proyectarSets();
+
+    console.table(
+        sets.map(function(set) {
+            return {
+                SET: set.codigo,
+                kVA: set.potenciaInstalada,
+                ubicacion: set.ubicacion
+            };
+        })
+    );
+}
+
+/* =========================================================
+   CLIENTES VIGENTES POR SET - CAPA 27
+   Relación validada: SERVICIOS CLIENTES.SUBSTATION = código SET
+========================================================= */
+
+async function cargarClientesSets() {
+    sets.forEach(function(set) {
+        set.clientes = 0;
+        set.clientesCargados = false;
+    });
+
+    const codigos = [
+        ...new Set(
+            sets
+            .map(function(set) {
+                return String(set.codigo ?? "").trim();
+            })
+            .filter(function(codigo) {
+                return codigo !== "";
+            })
+        )
+    ];
+
+    if (codigos.length === 0) return;
+
+    const conteos = new Map();
+    const LOTE = 100;
+
+    for (let i = 0; i < codigos.length; i += LOTE) {
+        const lote = codigos.slice(i, i + LOTE);
+
+        const listaSql = lote
+            .map(function(codigo) {
+                return "'" + escaparSQL(codigo) + "'";
+            })
+            .join(",");
+
+        const where =
+            "ESTADO = 'Vigente' AND SUBSTATION IN (" +
+            listaSql +
+            ")";
+
+        const outStatistics = JSON.stringify([
+            {
+                statisticType: "count",
+                onStatisticField: "SERVICIO",
+                outStatisticFieldName: "CLIENTES"
+            }
+        ]);
+
+        const url =
+            BASE_URL +
+            "/27/query" +
+            "?f=json" +
+            "&where=" + encodeURIComponent(where) +
+            "&outStatistics=" + encodeURIComponent(outStatistics) +
+            "&groupByFieldsForStatistics=SUBSTATION" +
+            "&orderByFields=SUBSTATION" +
+            "&returnGeometry=false";
+
+        try {
+            const response = await fetch(url);
+            const json = await response.json();
+
+            if (json.error) {
+                throw new Error(json.error.message || "Error REST capa 27");
+            }
+
+            (json.features || []).forEach(function(feature) {
+                const a = feature.attributes || {};
+                const codigo = String(a.SUBSTATION ?? "").trim();
+                const cantidad = Number(a.CLIENTES ?? 0);
+
+                if (codigo) {
+                    conteos.set(
+                        codigo,
+                        Number.isFinite(cantidad) ? cantidad : 0
+                    );
+                }
+            });
+
+            lote.forEach(function(codigo) {
+                if (!conteos.has(codigo)) conteos.set(codigo, 0);
+            });
+
+        } catch (error) {
+            console.warn(
+                "Falló consulta estadística de clientes. Se usa fallback por SET.",
+                error
+            );
+
+            for (const codigo of lote) {
+                try {
+                    const whereUno =
+                        "SUBSTATION = '" + escaparSQL(codigo) +
+                        "' AND ESTADO = 'Vigente'";
+
+                    const urlUno =
+                        BASE_URL +
+                        "/27/query" +
+                        "?f=json" +
+                        "&where=" + encodeURIComponent(whereUno) +
+                        "&returnCountOnly=true";
+
+                    const r = await fetch(urlUno);
+                    const j = await r.json();
+
+                    conteos.set(
+                        codigo,
+                        Number.isFinite(Number(j.count)) ? Number(j.count) : 0
+                    );
+                } catch (errorUno) {
+                    console.error(
+                        "No se pudo contar clientes de SET " + codigo,
+                        errorUno
+                    );
+                    conteos.set(codigo, 0);
+                }
+            }
+        }
+    }
+
+    sets.forEach(function(set) {
+        const codigo = String(set.codigo ?? "").trim();
+        set.clientes = conteos.get(codigo) ?? 0;
+        set.clientesCargados = true;
+    });
+
+    console.table(
+        sets.map(function(set) {
+            return {
+                SET: set.codigo,
+                kVA: set.potenciaInstalada,
+                clientesVigentes: set.clientes
+            };
+        })
+    );
+}
+
+function formatearClientes(valor) {
+    const n = Number(valor);
+    if (!Number.isFinite(n)) return "0 clientes";
+    return n.toLocaleString("es-AR") + (n === 1 ? " cliente" : " clientes");
+}
+
+function dibujarSets() {
+    capaSets.clearLayers();
+    capaEtiquetasSets.clearLayers();
+
+    sets.forEach(function(set) {
+        if (
+            !Number.isFinite(set.lat) ||
+            !Number.isFinite(set.lng)
+        ) {
+            return;
+        }
+
+        L.marker(
+            [set.lat, set.lng],
+            {
+                icon: L.divIcon({
+                    className: "icono-set-leaflet",
+                    html: '<div class="simbolo-set"></div>',
+                    iconSize: [14, 14],
+                    iconAnchor: [7, 7]
+                })
+            }
+        )
+        .bindPopup(
+            '<div class="titulo-popup">SET ' +
+            set.codigo +
+            "</div>" +
+            "<b>Potencia instalada:</b> " +
+            formatearKVA(set.potenciaInstalada) +
+            "<br>" +
+            "<b>Clientes vigentes:</b> " +
+            formatearClientes(set.clientes) +
+            "<br>" +
+            "<b>Ubicación:</b> " +
+            (set.ubicacion ?? "-") +
+            "<br>" +
+            "<b>Tensión:</b> " +
+            (set.tension ?? "-") +
+            "<br>" +
+            "<b>Transformador:</b> " +
+            set.transformadores
+                .map(function(t) {
+                    return t.equipmentNumber ?? "-";
+                })
+                .join(", ") +
+            "<br>" +
+            "<b>SECC aguas arriba:</b> " +
+            (
+                set.padreSecc
+                ? "SECC " + set.padreSecc.seccid
+                : "Sin determinar"
+            )
+        )
+        .addTo(capaSets);
+
+        L.marker(
+            [set.lat, set.lng],
+            {
+                interactive: false,
+                icon:
+                    L.divIcon({
+                        className: "etiqueta-set",
+                        html:
+                            "SET " +
+                            set.codigo +
+                            " · " +
+                            formatearKVA(
+                                set.potenciaInstalada
+                            ) +
+                            " · " +
+                            formatearClientes(set.clientes),
+                        iconSize: null
+                    })
+            }
+        )
+        .addTo(capaEtiquetasSets);
+    });
+
+    actualizarVisibilidadEtiquetas();
+}
+
+function actualizarVisibilidadEtiquetas() {
+    const zoom = map.getZoom();
+
+    if (zoom >= ZOOM_ETIQUETAS_SECC) {
+        if (!map.hasLayer(capaEtiquetas)) {
+            capaEtiquetas.addTo(map);
+        }
+    } else {
+        if (map.hasLayer(capaEtiquetas)) {
+            map.removeLayer(capaEtiquetas);
+        }
+    }
+
+    if (zoom >= ZOOM_ETIQUETAS_SET) {
+        if (!map.hasLayer(capaEtiquetasSets)) {
+            capaEtiquetasSets.addTo(map);
+        }
+    } else {
+        if (map.hasLayer(capaEtiquetasSets)) {
+            map.removeLayer(capaEtiquetasSets);
+        }
+    }
+}
+
+function definirCabecera(nodoId) {
+    if (divisionCabeceraSecc) {
+        restaurarDivisionCabeceraSecc();
+    }
+
+    cabecera = buscarNodo(nodoId);
+    cabeceraSecc = null;
+
+    if (!cabecera) return;
+
+    orientarArbol();
+    calcularPosicionElectrica();
+    construirArbolSeccionamientos();
+
+    calcularPosicionElectricaSets();
+    asignarSetsASeccionamientos();
+    calcularPotencias();
+    inicializarRamasAbiertas();
+
+    dibujarNodos();
+    dibujarCabecera();
+    dibujarSeccionamientos();
+    dibujarSets();
+    mostrarArbol();
+    actualizarCabecera();
+
+    map.closePopup();
+}
+
+function definirCabeceraSecc(seccid) {
+    /* Si ya había una cabecera virtual, volvemos primero al grafo original. */
+    if (divisionCabeceraSecc) {
+        restaurarDivisionCabeceraSecc();
+        proyectarSeccionamientos();
+        proyectarSets();
+    }
+
+    const secc =
+        seccionamientos.find(function(s) {
+            return String(s.seccid) === String(seccid);
+        });
+
+    if (!secc || !secc.snapValido || !secc.aristaId) {
+        mostrarEstado(
+            "El SECC " + escaparHTML(seccid) +
+            " no pertenece al distribuidor cargado o no pudo ubicarse eléctricamente."
+        );
+        return;
+    }
+
+    const aristaOriginal =
+        aristas.find(function(a) {
+            return a.id === secc.aristaId;
+        });
+
+    if (!aristaOriginal) {
+        mostrarEstado(
+            "No se pudo determinar la arista del SECC " +
+            escaparHTML(seccid) + "."
+        );
+        return;
+    }
+
+    const nodoA = buscarNodo(aristaOriginal.nodoA);
+    const nodoB = buscarNodo(aristaOriginal.nodoB);
+
+    if (!nodoA || !nodoB) return;
+
+    const t =
+        Math.max(
+            0,
+            Math.min(1, numeroSeguro(secc.tArista))
+        );
+
+    /* Posición exacta proyectada del SECC sobre la línea MT. */
+    const latRaiz =
+        nodoA.lat + (nodoB.lat - nodoA.lat) * t;
+
+    const lngRaiz =
+        nodoA.lng + (nodoB.lng - nodoA.lng) * t;
+
+    const nodoVirtual = {
+        id: "CABECERA_SECC_" + String(secc.seccid),
+        lat: latRaiz,
+        lng: lngRaiz,
+        vecinos: new Set(),
+        grado: 2,
+        padre: null,
+        hijos: [],
+        nivel: null,
+        distanciaCabecera: null,
+        esCabeceraSecc: true
+    };
+
+    /* Guardamos todo lo necesario para poder restaurar el grafo. */
+    divisionCabeceraSecc = {
+        aristaOriginal: aristaOriginal,
+        nodoAId: nodoA.id,
+        nodoBId: nodoB.id,
+        nodoVirtualId: nodoVirtual.id
+    };
+
+    /* Quitamos la arista original A-B. */
+    aristas =
+        aristas.filter(function(a) {
+            return a.id !== aristaOriginal.id;
+        });
+
+    nodoA.vecinos.delete(nodoB.id);
+    nodoB.vecinos.delete(nodoA.id);
+
+    nodos.push(nodoVirtual);
+
+    /* La reemplazamos por A-CABECERA y CABECERA-B. */
+    const aristaA = {
+        id: aristaOriginal.id + "_A",
+        nodoA: nodoA.id,
+        nodoB: nodoVirtual.id,
+        longitud: distanciaMetros(
+            nodoA.lat, nodoA.lng,
+            nodoVirtual.lat, nodoVirtual.lng
+        ),
+        fromNode: null,
+        toNode: null
+    };
+
+    const aristaB = {
+        id: aristaOriginal.id + "_B",
+        nodoA: nodoVirtual.id,
+        nodoB: nodoB.id,
+        longitud: distanciaMetros(
+            nodoVirtual.lat, nodoVirtual.lng,
+            nodoB.lat, nodoB.lng
+        ),
+        fromNode: null,
+        toNode: null
+    };
+
+    aristas.push(aristaA, aristaB);
+
+    nodoA.vecinos.add(nodoVirtual.id);
+    nodoVirtual.vecinos.add(nodoA.id);
+
+    nodoB.vecinos.add(nodoVirtual.id);
+    nodoVirtual.vecinos.add(nodoB.id);
+
+    calcularGrados();
+
+    /* El propio punto del SECC pasa a ser la raíz topológica. */
+    cabecera = nodoVirtual;
+    cabeceraSecc = secc;
+
+    /* Al cambiar las aristas hay que volver a proyectar los equipos. */
+    proyectarSeccionamientos();
+    proyectarSets();
+
+    orientarArbol();
+    calcularPosicionElectrica();
+    construirArbolSeccionamientos();
+
+    /* Forzamos al SECC elegido a ser el padre superior de todas las ramas.
+       Esto es importante cuando el punto de cabecera divide la antigua arista
+       en dos sentidos topológicos. */
+    convertirSeccEnRaiz(secc);
+
+    calcularPosicionElectricaSets();
+    asignarSetsASeccionamientos();
+    calcularPotencias();
+
+    ramasAbiertas = new Set();
+    ramasAbiertas.add(String(secc.seccid));
+
+    dibujarNodos();
+    dibujarCabecera();
+    dibujarSeccionamientos();
+    dibujarSets();
+    mostrarArbol();
+    actualizarCabecera();
+
+    map.setView([secc.lat, secc.lng], 20);
+    map.closePopup();
+}
+
+function convertirSeccEnRaiz(seccRaiz) {
+    /* Desvinculamos el SECC seleccionado de cualquier padre previo. */
+    if (seccRaiz.padreSecc) {
+        seccRaiz.padreSecc.hijosSecc =
+            (seccRaiz.padreSecc.hijosSecc || [])
+            .filter(function(h) {
+                return h !== seccRaiz;
+            });
+    }
+
+    seccRaiz.padreSecc = null;
+
+    /* Todas las otras raíces válidas pasan a colgar del SECC cabecera. */
+    const otrasRaices =
+        seccionamientos.filter(function(s) {
+            return (
+                s !== seccRaiz &&
+                s.snapValido &&
+                Number.isFinite(s.distanciaCabecera) &&
+                !s.padreSecc
+            );
+        });
+
+    otrasRaices.forEach(function(raiz) {
+        raiz.padreSecc = seccRaiz;
+
+        if (!(seccRaiz.hijosSecc || []).includes(raiz)) {
+            seccRaiz.hijosSecc.push(raiz);
+        }
+    });
+}
+
+function restaurarDivisionCabeceraSecc() {
+    if (!divisionCabeceraSecc) return;
+
+    const info = divisionCabeceraSecc;
+    const nodoA = buscarNodo(info.nodoAId);
+    const nodoB = buscarNodo(info.nodoBId);
+
+    aristas =
+        aristas.filter(function(a) {
+            return (
+                a.id !== info.aristaOriginal.id + "_A" &&
+                a.id !== info.aristaOriginal.id + "_B"
+            );
+        });
+
+    nodos =
+        nodos.filter(function(n) {
+            return n.id !== info.nodoVirtualId;
+        });
+
+    if (nodoA) {
+        nodoA.vecinos.delete(info.nodoVirtualId);
+    }
+
+    if (nodoB) {
+        nodoB.vecinos.delete(info.nodoVirtualId);
+    }
+
+    if (nodoA && nodoB) {
+        nodoA.vecinos.add(nodoB.id);
+        nodoB.vecinos.add(nodoA.id);
+    }
+
+    aristas.push(info.aristaOriginal);
+
+    divisionCabeceraSecc = null;
+    calcularGrados();
+}
+
+function volverCabeceraDistribuidor() {
+    if (divisionCabeceraSecc) {
+        restaurarDivisionCabeceraSecc();
+        proyectarSeccionamientos();
+        proyectarSets();
+    }
+
+    cabeceraSecc = null;
+    cabecera = null;
+    ramasAbiertas = new Set();
+
+    seccionamientos.forEach(function(secc) {
+        secc.padreSecc = null;
+        secc.hijosSecc = [];
+        secc.setsDirectas = [];
+        secc.potenciaDirecta = 0;
+        secc.potenciaAguasAbajo = 0;
+        secc.cantidadSetsAguasAbajo = 0;
+    });
+
+    capaCabecera.clearLayers();
+
+    document.getElementById("contenidoArbol").innerHTML =
+        "Seleccione una nueva cabecera.";
+
+    document.getElementById("cabeceraInfo").innerHTML =
+        "<b>Cabecera:</b> no seleccionada.";
+
+    dibujarNodos();
+    dibujarSeccionamientos();
+    dibujarSets();
+}
+
+function orientarArbol() {
+    nodos.forEach(function(nodo) {
+        nodo.padre = null;
+        nodo.hijos = [];
+        nodo.nivel = null;
+        nodo.distanciaCabecera = null;
+    });
+
+    aristas.forEach(function(arista) {
+        arista.fromNode = null;
+        arista.toNode = null;
+    });
+
+    const visitados = new Set();
+    const cola = [cabecera];
+
+    cabecera.nivel = 0;
+    cabecera.distanciaCabecera = 0;
+
+    visitados.add(cabecera.id);
+
+    while (cola.length) {
+        const actual = cola.shift();
+
+        for (const vecinoId of actual.vecinos) {
+            if (visitados.has(vecinoId)) {
+                continue;
+            }
+
+            const vecino = buscarNodo(vecinoId);
+            const arista =
+                buscarAristaEntre(
+                    actual.id,
+                    vecino.id
+                );
+
+            vecino.padre = actual.id;
+            vecino.nivel = actual.nivel + 1;
+
+            vecino.distanciaCabecera =
+                actual.distanciaCabecera +
+                arista.longitud;
+
+            actual.hijos.push(vecino.id);
+
+            arista.fromNode = actual.id;
+            arista.toNode = vecino.id;
+
+            visitados.add(vecino.id);
+            cola.push(vecino);
+        }
+    }
+}
+
+function calcularPosicionElectrica() {
+    seccionamientos.forEach(function(secc) {
+        if (!secc.snapValido) return;
+
+        const arista =
+            aristas.find(function(a) {
+                return a.id === secc.aristaId;
+            });
+
+        if (!arista || !arista.fromNode) {
+            return;
+        }
+
+        const nodoFrom =
+            buscarNodo(arista.fromNode);
+
+        let t = secc.tArista;
+
+        if (arista.fromNode !== arista.nodoA) {
+            t = 1 - secc.tArista;
+        }
+
+        secc.tOrientado = t;
+        secc.fromNode = arista.fromNode;
+        secc.toNode = arista.toNode;
+
+        secc.distanciaCabecera =
+            nodoFrom.distanciaCabecera +
+            t * arista.longitud;
+    });
+}
+
+function construirArbolSeccionamientos() {
+    seccionamientos.forEach(function(secc) {
+        secc.padreSecc = null;
+        secc.hijosSecc = [];
+        secc.setsDirectas = [];
+        secc.potenciaDirecta = 0;
+        secc.potenciaAguasAbajo = 0;
+        secc.cantidadSetsAguasAbajo = 0;
+    });
+
+    const validos =
+        seccionamientos.filter(function(secc) {
+            return (
+                secc.snapValido &&
+                Number.isFinite(
+                    secc.distanciaCabecera
+                )
+            );
+        });
+
+    validos.forEach(function(objetivo) {
+        let mejorPadre = null;
+
+        validos.forEach(function(candidato) {
+            if (candidato === objetivo) return;
+
+            if (
+                candidato.distanciaCabecera >=
+                objetivo.distanciaCabecera
+            ) {
+                return;
+            }
+
+            if (
+                !esAguasArriba(
+                    candidato,
+                    objetivo
+                )
+            ) {
+                return;
+            }
+
+            if (
+                !mejorPadre ||
+                candidato.distanciaCabecera >
+                    mejorPadre.distanciaCabecera
+            ) {
+                mejorPadre = candidato;
+            }
+        });
+
+        objetivo.padreSecc = mejorPadre;
+
+        if (mejorPadre) {
+            mejorPadre.hijosSecc.push(objetivo);
+        }
+    });
+}
+
+function esAguasArriba(candidato, objetivo) {
+    if (
+        candidato.aristaId ===
+        objetivo.aristaId
+    ) {
+        return (
+            candidato.tOrientado <
+            objetivo.tOrientado
+        );
+    }
+
+    let nodoActual =
+        objetivo.fromNode;
+
+    while (nodoActual) {
+        if (
+            nodoActual ===
+            candidato.toNode
+        ) {
+            return true;
+        }
+
+        const nodo =
+            buscarNodo(nodoActual);
+
+        if (!nodo) break;
+
+        nodoActual = nodo.padre;
+    }
+
+    return false;
+}
+
+function proyectarSets() {
+    sets.forEach(function(set) {
+        if (
+            !Number.isFinite(set.lat) ||
+            !Number.isFinite(set.lng)
+        ) {
+            set.snapValido = false;
+            return;
+        }
+
+        let mejor = null;
+
+        aristas.forEach(function(arista) {
+            const nodoA = buscarNodo(arista.nodoA);
+            const nodoB = buscarNodo(arista.nodoB);
+
+            const resultado =
+                proyectarPuntoSegmento(
+                    set.lat,
+                    set.lng,
+                    nodoA.lat,
+                    nodoA.lng,
+                    nodoB.lat,
+                    nodoB.lng
+                );
+
+            if (
+                !mejor ||
+                resultado.distancia < mejor.distancia
+            ) {
+                mejor = {
+                    aristaId: arista.id,
+                    distancia: resultado.distancia,
+                    t: resultado.t
+                };
+            }
+        });
+
+        if (!mejor) {
+            set.snapValido = false;
+            return;
+        }
+
+        set.aristaId = mejor.aristaId;
+        set.tArista = mejor.t;
+        set.distanciaLinea = mejor.distancia;
+
+        /* Usamos un margen algo mayor para SET porque el trafo
+           puede quedar desplazado respecto de la polilínea MT. */
+        set.snapValido = mejor.distancia <= 30;
+    });
+}
+
+function calcularPosicionElectricaSets() {
+    sets.forEach(function(set) {
+        if (!set.snapValido) return;
+
+        const arista =
+            aristas.find(function(a) {
+                return a.id === set.aristaId;
+            });
+
+        if (!arista || !arista.fromNode) {
+            return;
+        }
+
+        const nodoFrom =
+            buscarNodo(arista.fromNode);
+
+        let t = set.tArista;
+
+        if (arista.fromNode !== arista.nodoA) {
+            t = 1 - set.tArista;
+        }
+
+        set.tOrientado = t;
+        set.fromNode = arista.fromNode;
+        set.toNode = arista.toNode;
+
+        set.distanciaCabecera =
+            nodoFrom.distanciaCabecera +
+            t * arista.longitud;
+    });
+}
+
+function asignarSetsASeccionamientos() {
+    seccionamientos.forEach(function(secc) {
+        secc.setsDirectas = [];
+    });
+
+    sets.forEach(function(set) {
+        set.padreSecc = null;
+
+        if (
+            !set.snapValido ||
+            !Number.isFinite(set.distanciaCabecera)
+        ) {
+            return;
+        }
+
+        let mejor = null;
+
+        seccionamientos.forEach(function(secc) {
+            if (
+                !secc.snapValido ||
+                !Number.isFinite(secc.distanciaCabecera)
+            ) {
+                return;
+            }
+
+            if (
+                secc.distanciaCabecera >
+                set.distanciaCabecera
+            ) {
+                return;
+            }
+
+            if (
+                !esAguasArriba(
+                    secc,
+                    set
+                )
+            ) {
+                return;
+            }
+
+            if (
+                !mejor ||
+                secc.distanciaCabecera >
+                mejor.distanciaCabecera
+            ) {
+                mejor = secc;
+            }
+        });
+
+        set.padreSecc = mejor;
+
+        if (mejor) {
+            mejor.setsDirectas.push(set);
+        }
+    });
+}
+
+function calcularPotencias() {
+    seccionamientos.forEach(function(secc) {
+        secc.potenciaDirecta =
+            (secc.setsDirectas || [])
+            .reduce(function(total, set) {
+                return total + numeroSeguro(set.potenciaInstalada);
+            }, 0);
+
+        secc.clientesDirectos =
+            (secc.setsDirectas || [])
+            .reduce(function(total, set) {
+                return total + numeroSeguro(set.clientes);
+            }, 0);
+
+        secc.potenciaAguasAbajo = 0;
+        secc.clientesAguasAbajo = 0;
+        secc.cantidadSetsAguasAbajo = 0;
+    });
+
+    const raices =
+        seccionamientos.filter(function(secc) {
+            return (
+                secc.snapValido &&
+                Number.isFinite(secc.distanciaCabecera) &&
+                !secc.padreSecc
+            );
+        });
+
+    raices.forEach(function(raiz) {
+        calcularPotenciaRecursiva(raiz);
+    });
+}
+
+function calcularPotenciaRecursiva(secc) {
+    let potencia = numeroSeguro(secc.potenciaDirecta);
+    let clientes = numeroSeguro(secc.clientesDirectos);
+    let cantidad = (secc.setsDirectas || []).length;
+
+    (secc.hijosSecc || []).forEach(function(hijo) {
+        const resultado = calcularPotenciaRecursiva(hijo);
+
+        potencia += resultado.potencia;
+        clientes += resultado.clientes;
+        cantidad += resultado.cantidad;
+    });
+
+    secc.potenciaAguasAbajo = potencia;
+    secc.clientesAguasAbajo = clientes;
+    secc.cantidadSetsAguasAbajo = cantidad;
+
+    return {
+        potencia: potencia,
+        clientes: clientes,
+        cantidad: cantidad
+    };
+}
+
+function mostrarArbol() {
+    const contenedor =
+        document.getElementById(
+            "contenidoArbol"
+        );
+
+    const raices =
+        (
+            cabeceraSecc
+            ? [cabeceraSecc]
+            : seccionamientos
+              .filter(function(secc) {
+                  return (
+                      secc.snapValido &&
+                      Number.isFinite(
+                          secc.distanciaCabecera
+                      ) &&
+                      !secc.padreSecc
+                  );
+              })
+              .sort(function(a, b) {
+                  return (
+                      a.distanciaCabecera -
+                      b.distanciaCabecera
+                  );
+              })
+        );
+
+    const potenciaTotal =
+        cabeceraSecc
+        ? numeroSeguro(cabeceraSecc.potenciaAguasAbajo)
+        : sets.reduce(function(total, set) {
+              return total + numeroSeguro(set.potenciaInstalada);
+          }, 0);
+
+    const cantidadSets =
+        cabeceraSecc
+        ? cabeceraSecc.cantidadSetsAguasAbajo
+        : sets.length;
+
+    const clientesTotal =
+        cabeceraSecc
+        ? numeroSeguro(cabeceraSecc.clientesAguasAbajo)
+        : sets.reduce(function(total, set) {
+              return total + numeroSeguro(set.clientes);
+          }, 0);
+
+    let html =
+        '<div class="arbolNodo" style="font-weight:bold;margin-bottom:6px;">' +
+        (
+            cabeceraSecc
+            ? (
+                "Desde SECC " +
+                cabeceraSecc.seccid +
+                " — "
+            )
+            : (
+                alimentadorActual +
+                " — "
+            )
+        ) +
+        formatearKVA(potenciaTotal) +
+        " (" +
+        cantidadSets +
+        " SET) · " +
+        "<b>" + formatearClientes(clientesTotal) + "</b> ↓" +
+        "</div>";
+
+    if (cabeceraSecc) {
+        html +=
+            '<button style="margin-bottom:8px;width:100%;" ' +
+            'onclick="volverCabeceraDistribuidor()">' +
+            "Quitar cabecera SECC" +
+            "</button>";
+    }
+
+    raices.forEach(function(raiz) {
+        html += generarRama(raiz, 1);
+    });
+
+    const sinSecc =
+        sets.filter(function(set) {
+            return (
+                set.snapValido &&
+                Number.isFinite(set.distanciaCabecera) &&
+                !set.padreSecc
+            );
+        });
+
+    if (!cabeceraSecc && sinSecc.length > 0) {
+        html +=
+            '<div style="margin-top:10px;font-size:11px;color:#777;">' +
+            'SET sin SECC aguas arriba: ' +
+            sinSecc.length +
+            "</div>";
+
+        sinSecc
+        .sort(function(a, b) {
+            return a.distanciaCabecera - b.distanciaCabecera;
+        })
+        .forEach(function(set) {
+            html += generarHTMLSet(set, 1);
+        });
+    }
+
+    contenedor.innerHTML = html;
+}
+
+function generarRama(secc, nivel) {
+    const margen = nivel * 18;
+
+    const tieneHijos =
+        (secc.setsDirectas || []).length > 0 ||
+        (secc.hijosSecc || []).length > 0;
+
+    const abierta =
+        ramasAbiertas.has(String(secc.seccid));
+
+    let html =
+        '<div class="filaSecc" style="margin-left:' +
+        margen +
+        'px">' +
+        '<span class="toggleRama" ' +
+        (
+            tieneHijos
+            ? 'onclick="event.stopPropagation();toggleRama(\'' +
+              secc.seccid +
+              '\')"'
+            : ''
+        ) +
+        '>' +
+        (
+            tieneHijos
+            ? (abierta ? "▼" : "▶")
+            : "•"
+        ) +
+        '</span>' +
+        '<div class="arbolNodo secc" ' +
+        'onclick="enfocarSecc(\'' +
+        secc.seccid +
+        "')\">" +
+        "SECC " +
+        secc.seccid +
+        ' <span class="tipo">[' +
+        secc.tipoSeccionamiento +
+        "]</span>" +
+        " — <b>Σ " +
+        formatearKVA(secc.potenciaAguasAbajo) +
+        "</b> ↓ · <b>" +
+        formatearClientes(secc.clientesAguasAbajo) +
+        "</b> ↓" +
+        ' <span class="tipo">(' +
+        secc.cantidadSetsAguasAbajo +
+        " SET)</span>" +
+        "</div>" +
+        "</div>";
+
+    if (!tieneHijos) {
+        return html;
+    }
+
+    const elementos = [];
+
+    (secc.setsDirectas || []).forEach(function(set) {
+        elementos.push({
+            tipo: "SET",
+            distancia: set.distanciaCabecera,
+            objeto: set
+        });
+    });
+
+    (secc.hijosSecc || []).forEach(function(hijo) {
+        elementos.push({
+            tipo: "SECC",
+            distancia: hijo.distanciaCabecera,
+            objeto: hijo
+        });
+    });
+
+    elementos.sort(function(a, b) {
+        return a.distancia - b.distancia;
+    });
+
+    html +=
+        '<div class="ramaHijos ' +
+        (abierta ? "abierta" : "") +
+        '" id="rama_' +
+        secc.seccid +
+        '">';
+
+    elementos.forEach(function(elemento) {
+        if (elemento.tipo === "SET") {
+            html += generarHTMLSet(
+                elemento.objeto,
+                nivel + 1
+            );
+        } else {
+            html += generarRama(
+                elemento.objeto,
+                nivel + 1
+            );
+        }
+    });
+
+    html += "</div>";
+
+    return html;
+}
+
+function inicializarRamasAbiertas() {
+    ramasAbiertas = new Set();
+
+    const raices =
+        seccionamientos.filter(function(secc) {
+            return (
+                secc.snapValido &&
+                Number.isFinite(secc.distanciaCabecera) &&
+                !secc.padreSecc
+            );
+        });
+
+    raices.forEach(function(raiz) {
+        ramasAbiertas.add(String(raiz.seccid));
+    });
+}
+
+function toggleRama(seccid) {
+    const key = String(seccid);
+
+    if (ramasAbiertas.has(key)) {
+        ramasAbiertas.delete(key);
+    } else {
+        ramasAbiertas.add(key);
+    }
+
+    mostrarArbol();
+}
+
+function expandirTodo() {
+    if (!cabecera) return;
+
+    ramasAbiertas = new Set(
+        seccionamientos
+        .filter(function(secc) {
+            return (
+                (secc.setsDirectas || []).length > 0 ||
+                (secc.hijosSecc || []).length > 0
+            );
+        })
+        .map(function(secc) {
+            return String(secc.seccid);
+        })
+    );
+
+    mostrarArbol();
+}
+
+function contraerTodo() {
+    if (!cabecera) return;
+
+    ramasAbiertas = new Set();
+    mostrarArbol();
+}
+
+function generarHTMLSet(set, nivel) {
+    const margen = nivel * 18;
+
+    return (
+        '<div class="setNodo" ' +
+        'style="margin-left:' + (margen + 20) + 'px" ' +
+        'onclick="enfocarSet(\'' +
+        set.objectid +
+        "')\">" +
+        "├─ SET " +
+        set.codigo +
+        " — " +
+        formatearKVA(set.potenciaInstalada) +
+        " — " +
+        formatearClientes(set.clientes) +
+        "</div>"
+    );
+}
+
+function enfocarSet(objectid) {
+    const set =
+        sets.find(function(s) {
+            return (
+                String(s.objectid) ===
+                String(objectid)
+            );
+        });
+
+    if (!set) return;
+
+    map.setView(
+        [set.lat, set.lng],
+        20
+    );
+}
+
+function enfocarSecc(seccid) {
+    const secc =
+        seccionamientos.find(function(s) {
+            return (
+                String(s.seccid) ===
+                String(seccid)
+            );
+        });
+
+    if (!secc) return;
+
+    map.setView(
+        [secc.lat, secc.lng],
+        20
+    );
+}
+
+function dibujarCabecera() {
+    capaCabecera.clearLayers();
+
+    if (cabeceraSecc) {
+        L.circleMarker(
+            [cabeceraSecc.lat, cabeceraSecc.lng],
+            {
+                radius: 13,
+                weight: 4,
+                color: "#000",
+                fillColor: "#d00000",
+                fillOpacity: 1
+            }
+        )
+        .addTo(capaCabecera);
+
+        L.marker(
+            [cabeceraSecc.lat, cabeceraSecc.lng],
+            {
+                interactive: false,
+                icon:
+                    L.divIcon({
+                        className:
+                            "etiqueta-cabecera",
+                        html:
+                            "CABECERA SECC " +
+                            cabeceraSecc.seccid,
+                        iconSize:
+                            null
+                    })
+            }
+        )
+        .addTo(capaCabecera);
+
+        return;
+    }
+
+    if (!cabecera) return;
+
+    L.circleMarker(
+        [cabecera.lat, cabecera.lng],
+        {
+            radius: 13,
+            weight: 4,
+            fillOpacity: 1
+        }
+    )
+    .addTo(capaCabecera);
+
+    L.marker(
+        [cabecera.lat, cabecera.lng],
+        {
+            interactive: false,
+            icon:
+                L.divIcon({
+                    className:
+                        "etiqueta-cabecera",
+                    html:
+                        "CABECERA",
+                    iconSize:
+                        null
+                })
+        }
+    )
+    .addTo(capaCabecera);
+}
+
+function actualizarCabecera() {
+    const validos =
+        seccionamientos.filter(
+            function(secc) {
+                return (
+                    secc.snapValido &&
+                    Number.isFinite(
+                        secc.distanciaCabecera
+                    )
+                );
+            }
+        );
+
+    const asociadas =
+        sets.filter(function(s) {
+            return !!s.padreSecc;
+        });
+
+    let html =
+        "<b>Cabecera:</b> " +
+        (
+            cabeceraSecc
+            ? "SECC " + cabeceraSecc.seccid
+            : (cabecera ? cabecera.id : "no seleccionada")
+        ) +
+        "<br>" +
+        "<b>Distribuidor:</b> " +
+        alimentadorActual;
+
+    if (cabeceraSecc) {
+        html +=
+            "<br><br>" +
+            "<b>Cabecera de análisis:</b> SECC " +
+            cabeceraSecc.seccid +
+            "<br>" +
+            "<b>SET aguas abajo:</b> " +
+            cabeceraSecc.cantidadSetsAguasAbajo +
+            "<br>" +
+            "<b>Potencia instalada aguas abajo:</b> " +
+            formatearKVA(
+                cabeceraSecc.potenciaAguasAbajo
+            ) +
+            "<br>" +
+            "<b>Clientes vigentes aguas abajo:</b> " +
+            formatearClientes(
+                cabeceraSecc.clientesAguasAbajo
+            );
+    } else {
+        html +=
+            "<br><br>" +
+            "<b>SECC válidos:</b> " +
+            validos.length +
+            "<br>" +
+            "<b>SET:</b> " +
+            sets.length +
+            "<br>" +
+            "<b>SET asociadas a SECC:</b> " +
+            asociadas.length +
+            "<br>" +
+            "<b>Potencia asociada:</b> " +
+            formatearKVA(
+                asociadas.reduce(function(total, s) {
+                    return total + numeroSeguro(s.potenciaInstalada);
+                }, 0)
+            ) +
+            "<br>" +
+            "<b>Potencia total:</b> " +
+            formatearKVA(
+                sets.reduce(function(t, s) {
+                    return t + numeroSeguro(s.potenciaInstalada);
+                }, 0)
+            ) +
+            "<br>" +
+            "<b>Clientes vigentes:</b> " +
+            formatearClientes(
+                sets.reduce(function(t, s) {
+                    return t + numeroSeguro(s.clientes);
+                }, 0)
+            );
+    }
+
+    document
+    .getElementById("cabeceraInfo")
+    .innerHTML = html;
+}
+
+function buscarNodo(id) {
+    return nodos.find(function(n) {
+        return n.id === id;
+    });
+}
+
+function buscarAristaEntre(a, b) {
+    return aristas.find(function(arista) {
+        return (
+            (
+                arista.nodoA === a &&
+                arista.nodoB === b
+            )
+            ||
+            (
+                arista.nodoA === b &&
+                arista.nodoB === a
+            )
+        );
+    });
+}
+
+function proyectarPuntoSegmento(
+    latP,
+    lngP,
+    latA,
+    lngA,
+    latB,
+    lngB
+) {
+    const latRef =
+        (latA + latB + latP) / 3;
+
+    const cosLat =
+        Math.cos(
+            latRef *
+            Math.PI /
+            180
+        );
+
+    const METROS_LAT = 111320;
+    const METROS_LNG =
+        111320 * cosLat;
+
+    const ax = lngA * METROS_LNG;
+    const ay = latA * METROS_LAT;
+
+    const bx = lngB * METROS_LNG;
+    const by = latB * METROS_LAT;
+
+    const px = lngP * METROS_LNG;
+    const py = latP * METROS_LAT;
+
+    const abx = bx - ax;
+    const aby = by - ay;
+
+    const apx = px - ax;
+    const apy = py - ay;
+
+    const ab2 =
+        abx * abx +
+        aby * aby;
+
+    let t = 0;
+
+    if (ab2 > 0) {
+        t =
+            (
+                apx * abx +
+                apy * aby
+            )
+            /
+            ab2;
+    }
+
+    t =
+        Math.max(
+            0,
+            Math.min(1, t)
+        );
+
+    const qx = ax + t * abx;
+    const qy = ay + t * aby;
+
+    const dx = px - qx;
+    const dy = py - qy;
+
+    return {
+        distancia:
+            Math.sqrt(
+                dx * dx +
+                dy * dy
+            ),
+        t: t
+    };
+}
+
+function distanciaMetros(
+    lat1,
+    lon1,
+    lat2,
+    lon2
+) {
+    const R = 6371000;
+
+    const p1 =
+        lat1 *
+        Math.PI /
+        180;
+
+    const p2 =
+        lat2 *
+        Math.PI /
+        180;
+
+    const dp =
+        (lat2 - lat1) *
+        Math.PI /
+        180;
+
+    const dl =
+        (lon2 - lon1) *
+        Math.PI /
+        180;
+
+    const a =
+        Math.sin(dp / 2) ** 2 +
+        Math.cos(p1) *
+        Math.cos(p2) *
+        Math.sin(dl / 2) ** 2;
+
+    const c =
+        2 *
+        Math.atan2(
+            Math.sqrt(a),
+            Math.sqrt(1 - a)
+        );
+
+    return R * c;
+}
+
+function numeroSeguro(valor) {
+    if (
+        valor === null ||
+        valor === undefined ||
+        valor === ""
+    ) {
+        return 0;
+    }
+
+    if (
+        typeof valor ===
+        "number"
+    ) {
+        return (
+            Number.isFinite(valor)
+            ? valor
+            : 0
+        );
+    }
+
+    const numero =
+        Number(
+            String(valor)
+            .trim()
+            .replace(",", ".")
+        );
+
+    return (
+        Number.isFinite(numero)
+        ? numero
+        : 0
+    );
+}
+
+function formatearKVA(valor) {
+    return (
+        numeroSeguro(valor)
+        .toLocaleString(
+            "es-AR",
+            {
+                maximumFractionDigits: 1
+            }
+        )
+        +
+        " kVA"
+    );
+}
+
+function ajustarMapa() {
+    const layers =
+        capaLineas.getLayers();
+
+    if (!layers.length) return;
+
+    map.fitBounds(
+        L.featureGroup(
+            layers
+        )
+        .getBounds(),
+        {
+            padding:
+                [40, 40]
+        }
+    );
+
+    actualizarVisibilidadEtiquetas();
+}
+
+function mostrarEstado(texto) {
+    document
+    .getElementById("estado")
+    .innerHTML =
+        texto;
+}
+
+
+/* Mantiene Leaflet correctamente dimensionado al rotar el teléfono,
+   cambiar de orientación o redimensionar una ventana/tablet. */
+(function configurarVistaResponsive() {
+    let temporizadorResize = null;
+
+    function refrescarMapaResponsive() {
+        clearTimeout(temporizadorResize);
+        temporizadorResize = setTimeout(function() {
+            if (typeof map !== "undefined" && map) {
+                map.invalidateSize({ pan: false });
+                actualizarVisibilidadEtiquetas();
+            }
+        }, 120);
+    }
+
+    window.addEventListener("resize", refrescarMapaResponsive, { passive: true });
+    window.addEventListener("orientationchange", refrescarMapaResponsive, { passive: true });
+
+    if (window.visualViewport) {
+        window.visualViewport.addEventListener("resize", refrescarMapaResponsive, { passive: true });
+    }
+})();
+
+/* INICIO
+   La suite arranca con el mapa vacío. */
+
+</script>
+
+</body>
+</html>
